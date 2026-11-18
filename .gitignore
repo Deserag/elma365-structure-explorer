@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+*.tmp
+structure.json
+*-private.json
+*-tenant.json
+screenshot-*.png
+.env*
