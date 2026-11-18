@@ -2,7 +2,7 @@ import {DEMO,appKey,mergeStructure,countStats,getApps,buildRelations,findAccessE
 
 const root=document.getElementById('root');
 const fileInput=document.getElementById('file-input');
-const state={workspace:{structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true},activeTab:'records',expanded:new Set(['_clients','sales','hr']),search:'',searchOpen:false,modal:null,toast:null,sidebarOpen:true,storageReady:true};
+const state={workspace:{structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true},activeTab:'records',expanded:new Set(['_clients','sales','hr']),search:'',searchOpen:false,modal:null,toast:null,sidebarOpen:true,storageReady:true,viewMode:'kanban',navSectionCode:'_clients'};
 let relations=buildRelations(DEMO),toastTimer;
 const escapeHTML=(value)=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const e=escapeHTML;
@@ -56,33 +56,37 @@ async function persist(){try{await writeWorkspace(state.workspace);state.storage
 function refreshRelations(){relations=buildRelations(state.workspace.structure);}
 function navigate(url){state.modal=null;state.search='';state.searchOpen=false;const current=location.hash;if(current===url){render();return;}location.hash=url;}
 
-function renderRail(){const route=hashRoute();return `<aside class="rail">
-  <a href="#/" aria-label="Главная" class="rail-logo">e<span>·</span></a>
-  <div class="rail-separator"></div>
-  <button class="rail-link ${route.kind==='overview'?'selected':''}" data-action="home" title="Обзор">${ic('grid',21)}</button>
-  <button class="rail-link ${route.kind==='section'||route.kind==='app'?'selected':''}" data-action="sections" title="Структура">${ic('layers',21)}</button>
-  <button class="rail-link" data-action="history" title="История импорта">${ic('clock',21)}</button>
-  <div class="rail-space"></div>
-  <button class="rail-link" data-action="help" title="О проекте">${ic('help',21)}</button>
-  <div class="rail-avatar" title="Локальный проект">L</div>
-</aside>`;}
+function currentNavSection(){
+ const route=hashRoute();
+ const sectionCode=route.kind==='section'?route.key:route.kind==='app'?relations.byKey.get(route.key)?.section.code:state.navSectionCode;
+ return state.workspace.structure.sections.find(s=>s.code===sectionCode) || state.workspace.structure.sections.find(s=>s.code==='_clients') || state.workspace.structure.sections[0];
+}
+function renderRail(){
+ const active=currentNavSection(),all=state.workspace.structure.sections;
+ const pinned=['_clients','sbyt','telemarketingovyi_centr','_marketing','hr','kadrovaya_sluzhba','tmc','ofis','razrabotka'];
+ const sorted=[...all].sort((a,b)=>{
+   const ai=pinned.indexOf(a.code),bi=pinned.indexOf(b.code);
+   return (ai<0?999:ai)-(bi<0?999:bi);
+ });
+ const iconFor=s=>s.code==='_clients'?'database':s.code==='hr'||s.code==='kadrovaya_sluzhba'?'shield':s.code==='sbyt'?'folder':s.code==='razrabotka'?'code':'grid';
+ return `<aside class="rail"><a href="#/" class="rail-logo" title="ELMA365 · Структура">e</a>
+ <div class="rail-scroll"><a class="rail-section ${hashRoute().kind==='overview'?'selected':''}" href="#/" title="Обзор структуры">${ic('grid',21)}<small>Обзор</small></a>
+ ${sorted.map(s=>`<a class="rail-section ${active?.code===s.code&&hashRoute().kind!=='overview'?'selected':''}" href="${routeSection(s.code)}" title="${escAttr(s.name)}">${ic(iconFor(s),21)}<small>${e(s.name)}</small></a>`).join('')}</div>
+ <button class="rail-section rail-help" data-action="help" title="О проекте">${ic('help',20)}</button></aside>`;
+}
 function renderSidebar(){
-  const route=hashRoute(),structure=state.workspace.structure;
-  return `<aside class="sidebar ${state.sidebarOpen?'':'sidebar-hidden'}">
-    <div class="sidebar-title"><div><div class="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО</div><h2>Структура ELMA365</h2></div><button class="icon-button" data-action="collapse-sidebar" title="Свернуть навигацию">${ic('menu',18)}</button></div>
-    <div class="workspace-selector">${ic('database')} <span class="workspace-name">${state.workspace.demo?'Демо-проект':'Импортированная структура'}</span> ${ic('chevron',14)}</div>
-    <div class="sidebar-scroll"><div class="sidebar-section-label"><span>РАЗДЕЛЫ</span><span class="count">${structure.sections.length}</span></div>
-    <div class="tree"><a class="tree-overview ${route.kind==='overview'?'active':''}" href="#/">${ic('grid',17)} <span>Общий обзор</span></a>
-    ${structure.sections.map(s=>{
-      const expanded=state.expanded.has(s.code);
-      const apps=s.applications||[];
-      return `<div class="tree-group"><div class="tree-group-head ${((route.kind==='section'&&route.key===s.code)||(route.kind==='app'&&route.key.startsWith(s.code+'/')))?'tree-current':''}">
-        <button class="tree-expand ${expanded?'open':''}" data-action="toggle-section" ${attrKey(s.code)} aria-label="${expanded?'Свернуть':'Развернуть'}">${ic('chevron',13)}</button>
-        <a class="tree-section-title" href="${routeSection(s.code)}" title="${escAttr(s.name)}">${e(s.name)}</a><span class="tree-count">${apps.length}</span>
-      </div>${expanded?`<div class="tree-children">${apps.length?apps.map(a=>{const k=appKey(s.code,a.code);return `<a href="${routeApp(k)}" class="tree-child ${route.kind==='app'&&route.key===k?'active':''}" title="${escAttr(a.name)}">${ic('file',14)}<span>${e(a.name)}</span>${isArchived(k)?'<i class="archive-dot" title="Не найдено в последнем импорте"></i>':''}</a>`;}).join(''):'<div class="tree-empty">Нет приложений</div>'}</div>`:''}</div>`;
-    }).join('')}</div></div>
-    <div class="sidebar-bottom"><div class="side-note">${ic('shield',15)} <span>Данные хранятся в вашем браузере</span></div>${button('Импортировать JSON','import','primary','upload','class="full-width"')}</div>
-  </aside>`;
+ const route=hashRoute(),section=currentNavSection();
+ if(!section)return '';
+ const apps=section.applications||[],pages=section.pages||[],reports=section.reports||[],procs=section.processes||[];
+ return `<aside class="sidebar ${state.sidebarOpen?'':'sidebar-hidden'}">
+ <div class="sidebar-title"><div><div class="eyebrow">РАЗДЕЛ</div><h2>${e(section.name)}</h2></div><button class="icon-button" data-action="collapse-sidebar" title="Свернуть">${ic('chevron',18)}</button></div>
+ <a class="sidebar-all ${route.kind==='section'&&route.key===section.code?'active':''}" href="${routeSection(section.code)}">${ic('layers',16)}<span>Обзор раздела</span></a>
+ <div class="sidebar-scroll"><div class="sidebar-section-label"><span>ПРИЛОЖЕНИЯ</span><span class="count">${apps.length}</span></div>
+ <div class="elma-sidebar-apps">${apps.map(a=>{const key=appKey(section.code,a.code);return `<a class="tree-child ${route.kind==='app'&&route.key===key?'active':''}" href="${routeApp(key)}" title="${escAttr(a.name)}">${ic('file',14)}<span>${e(a.name)}</span>${isArchived(key)?'<i class="archive-dot"></i>':''}</a>`;}).join('')||'<div class="tree-empty">В разделе нет приложений</div>'}</div>
+ ${pages.length?`<div class="sidebar-section-label extra-label"><span>СТРАНИЦЫ</span><span class="count">${pages.length}</span></div><div class="sidebar-aux">${pages.map(p=>`<div>${ic('document',13)}<span>${e(p.name)}</span></div>`).join('')}</div>`:''}
+ ${reports.length?`<div class="sidebar-section-label extra-label"><span>ОТЧЁТЫ</span><span class="count">${reports.length}</span></div><div class="sidebar-aux">${reports.map(p=>`<div>${ic('table',13)}<span>${e(p.name)}</span></div>`).join('')}</div>`:''}
+ ${procs.length?`<details class="sidebar-optional"><summary>Бизнес-процессы раздела · ${procs.length}</summary><div>${procs.slice(0,40).map(p=>`<div class="sidebar-process">${ic('workflow',13)}<span>${e(p.name)}</span></div>`).join('')}</div></details>`:''}
+ </div><div class="sidebar-bottom"><div class="side-note">${ic('shield',14)}<span>Сохранение локально · IndexedDB</span></div>${button('Импортировать JSON','import','secondary','upload','class="full-width"')}</div></aside>`;
 }
 function searchCandidates(){const q=state.search.trim().toLocaleLowerCase('ru');if(!q)return[];
   return relations.entries.filter(x=>[x.app.name,x.app.code,x.section.name,x.section.code,x.app.elementName].some(z=>String(z||'').toLocaleLowerCase('ru').includes(q))).slice(0,14);
@@ -124,10 +128,10 @@ function renderMissing(){return `${bread([{name:'Не найдено'}])}<div cl
 function tabButton(id,label,iconName,count=''){return `<button class="tab ${state.activeTab===id?'active':''}" data-action="tab" data-tab="${id}">${ic(iconName,17)}${label}${count!==''?`<span class="tab-count">${count}</span>`:''}</button>`;}
 function renderApp(){const entry=activeEntry();if(!entry)return renderMissing();const {section,app,key}=entry;
  const incoming=relations.inward.get(key)||[],outgoing=relations.outward.get(key)||[],proc=appProcesses(section,app),records=state.workspace.records[key]||[],access=findAccessEntries(section,app);
- return `${bread([{name:section.name,url:routeSection(section.code)},{name:app.name}])}<div class="page-heading app-heading"><div><span class="section-kicker">ПРИЛОЖЕНИЕ / ${e(section.code)}.${e(app.code)}</span><h1><span class="title-app-icon">${ic('grid',26)}</span>${e(app.name)}</h1><p>${e(app.elementName||app.name)} · ${e(app.type||'STANDARD')} ${isArchived(key)?'<span class="stale-label">Сохранено из предыдущей выгрузки</span>':''}</p></div><div class="heading-actions">${button('Создать 5 записей','generate','secondary','plus')}${button('JSON приложения','app-json','primary','code')}</div></div>
- <div class="app-metrics"><div><strong>${formatNumber(app.fields?.length||0)}</strong><span>Полей</span></div><div><strong>${formatNumber(records.length)}</strong><span>Тестовых записей</span></div><div><strong>${formatNumber(outgoing.length+incoming.length)}</strong><span>Связей</span></div><div><strong>${formatNumber(proc.length)}</strong><span>Бизнес-процессов</span></div></div>
- <div class="tabs">${tabButton('records','Тестовые данные','database',records.length)}${tabButton('fields','Поля','table',app.fields?.length||0)}${tabButton('relations','Связи','network',outgoing.length+incoming.length)}${tabButton('processes','Бизнес-процессы','workflow',proc.length)}${tabButton('access','Доступ','shield',access.length)}</div>
- <div class="tab-content">${state.activeTab==='records'?renderRecords(entry):state.activeTab==='fields'?renderFields(entry):state.activeTab==='relations'?renderRelations(entry):state.activeTab==='processes'?renderProcesses(entry):renderAccess(entry)}</div>`;
+ return `<div class="elma-app-page"><div class="elma-toolbar"><div class="elma-filter">${ic('search',17)}<input id="record-search" placeholder="Поиск по полю Название" aria-label="Поиск по тестовым записям"/><span>Элементов: ${records.length}</span>${ic('table',16)}</div><div class="elma-toolbar-right"><span class="mock-pill">Тестовые данные</span>${button('Создать запись','generate','primary','plus')}${button('JSON','app-json','secondary','code')}</div></div>
+ <div class="elma-app-body"><div class="elma-name-row"><div><h1>${e(app.name)} <span class="elma-settings">${ic('settings',17)}</span></h1><div class="app-subline">${e(section.name)} / ${e(app.code)} <span>· ${app.fields?.length||0} полей · ${proc.length} БП · ${outgoing.length+incoming.length} связей</span>${isArchived(key)?'<span class="stale-label">Сохранено из прежнего импорта</span>':''}</div></div><div class="elma-view-switch"><button data-action="view-kanban" title="Карточки" class="view-switch ${state.viewMode==='kanban'?'on':''}">${ic('grid',17)}</button><button data-action="view-table" title="Таблица" class="view-switch ${state.viewMode==='table'?'on':''}">${ic('table',17)}</button></div></div>
+ <div class="tabs">${tabButton('records','Все записи','database',records.length)}${tabButton('fields','Поля приложения','table',app.fields?.length||0)}${tabButton('relations','Связи','network',outgoing.length+incoming.length)}${tabButton('processes','Бизнес-процессы','workflow',proc.length)}${tabButton('access','Доступ','shield',access.length)}</div>
+ <div class="tab-content">${state.activeTab==='records'?renderRecords(entry):state.activeTab==='fields'?renderFields(entry):state.activeTab==='relations'?renderRelations(entry):state.activeTab==='processes'?renderProcesses(entry):renderAccess(entry)}</div></div></div>`;
 }
 function formatValue(val,short=true){if(val===null||val===undefined||val==='')return '<span class="null-value">—</span>';
  if(typeof val==='boolean')return val?'<span class="boolean-yes">Да</span>':'Нет';
@@ -138,7 +142,19 @@ function formatValue(val,short=true){if(val===null||val===undefined||val==='')re
  }
  const str=String(val);return e(short?oneLine(str,56):str);
 }
-function renderRecords(entry){const {app,key}=entry,rows=state.workspace.records[key]||[];
+function renderKanban(entry){
+ const records=state.workspace.records[entry.key]||[];
+ const statusField=(entry.app.fields||[]).find(f=>f.code==='__status')||(entry.app.fields||[]).find(f=>f.type==='STATUS');
+ const getStatus=r=>{const value=statusField?r.fields?.[statusField.code]:null;return Array.isArray(value)?String(value[0]||'Без статуса'):String(value||'Без статуса');};
+ const statusValues=[...new Set(records.map(getStatus))];
+ const statusColumns=statusValues.length?statusValues:['Без статуса'];
+ return `<div class="kanban-hint">${ic('info',15)} Записи ниже созданы для тестирования. В исходном structure.json нет реальных элементов приложений или содержимого воронок.</div>
+ <div class="kanban-board">${statusColumns.map((status,i)=>{
+   const matching=records.map((r,index)=>({r,index})).filter(x=>getStatus(x.r)===status);
+   return `<div class="kanban-col col-${i%4}"><div class="kanban-title">${e(status)} <span>(${matching.length})</span></div><div class="kanban-cards">${matching.slice(0,100).map(({r,index})=>`<button class="kanban-card" data-action="open-record" data-index="${index}" ${attrKey(entry.key)}><strong>${e(r.title)}</strong><span class="kanban-label">Тестовая запись</span><div class="kanban-meta">${ic('clock',13)} Создана ${e(prettyDate(r.createdAt))}</div><div class="kanban-author">Тестовый пользователь</div></button>`).join('')||'<div class="kanban-no-records">Нет записей</div>'}</div></div>`;}).join('')}</div>`;
+}
+function renderRecords(entry){
+ if(state.viewMode==='kanban')return renderKanban(entry);const {app,key}=entry,rows=state.workspace.records[key]||[];
  const fields=[...(app.fields||[])].filter(f=>!['__id','__deletedAt','__debug','__externalProcessMeta','__tasks','__tasks_performers','__tasks_earliest_duedate'].includes(f.code));
  const mainFields=fields.filter(f=>!f.code.startsWith('__')).slice(0,5);
  if(!mainFields.some(f=>f.code==='__name'))mainFields.unshift({code:'__name',view:{name:'Название'},type:'STRING'});
@@ -182,7 +198,7 @@ function renderModal(){const modal=state.modal;if(!modal)return'';
   footer=`${button('Отмена','close-modal','secondary')}${button('Создать записи','confirm-generate-all','primary','plus')}`;
  }
  if(modal.type==='reset'){
-  title='Очистить рабочее пространство?';content=`<p>Загруженная структура, история импортов и все тестовые записи будут удалены из браузера. Вернётся демонстрационная структура.</p><p class="muted small">Перед очисткой можно скачать резервную копию данных.</p>`;
+  title='Очистить рабочее пространство?';content=`<p>Загруженная структура, история импортов и все тестовые записи будут удалены из браузера. Вернётся исходная структура из встроенного экспорта.</p><p class="muted small">Перед очисткой можно скачать резервную копию данных.</p>`;
   footer=`${button('Отмена','close-modal','secondary')}${button('Очистить','confirm-reset','danger','alert')}`;
  }
  return `<div class="modal-backdrop" data-action="close-modal"><div role="dialog" aria-modal="true" class="modal ${modal.type==='record'?'modal-wide':''}" ><div class="modal-heading"><h2>${e(title)}</h2><button class="icon-button" data-action="close-modal">${ic('close',20)}</button></div><div class="modal-content">${content}</div>${footer?`<div class="modal-footer">${footer}</div>`:''}</div></div>`;
@@ -226,6 +242,7 @@ root.addEventListener('click',async ev=>{
   if(action==='collapse-sidebar'){state.sidebarOpen=!state.sidebarOpen;render();return;}
   if(action==='goto-app'){state.activeTab='records';navigate(routeApp(el.dataset.key));return;}
   if(action==='tab'){state.activeTab=el.dataset.tab;render();return;}
+  if(action==='view-kanban'||action==='view-table'){state.viewMode=action==='view-kanban'?'kanban':'table';render();return;}
   if(action==='history'){state.modal={type:'history'};render();return;}
   if(action==='help'){state.modal={type:'help'};render();return;}
   if(action==='close-modal'){state.modal=null;render();return;}
@@ -245,7 +262,7 @@ root.addEventListener('click',async ev=>{
   }
   if(action==='reset'){state.modal={type:'reset'};render();return;}
   if(action==='confirm-reset'){
-   state.workspace={structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true};
+   state.workspace={structure:state.bundledStructure||DEMO,records:{},history:[],lastPresentApps:[],demo:!state.bundledStructure};
    refreshRelations();state.modal=null;navigate('#/');await persist();render();toast('Рабочее пространство очищено.');return;
   }
  }catch(err){console.error(err);toast(`Ошибка: ${err.message||String(err)}`,'error');}
@@ -261,13 +278,43 @@ document.getElementById('root').parentElement.addEventListener('click',async ev=
   state.modal=null;await persist();render();toast(`Создано ${relations.entries.length*5} тестовых записей.`);return;
  }
  if(action==='confirm-reset'){
-  state.workspace={structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true};refreshRelations();state.modal=null;navigate('#/');await persist();render();toast('Рабочее пространство очищено.');return;
+  state.workspace={structure:state.bundledStructure||DEMO,records:{},history:[],lastPresentApps:[],demo:!state.bundledStructure};refreshRelations();state.modal=null;navigate('#/');await persist();render();toast('Рабочее пространство очищено.');return;
  }
 });
-window.addEventListener('hashchange',()=>{state.activeTab='records';state.searchOpen=false;render();});
+window.addEventListener('hashchange',()=>{state.activeTab='records';state.searchOpen=false;const route=hashRoute();if(route.kind==='section')state.navSectionCode=route.key;else if(route.kind==='app')state.navSectionCode=relations.byKey.get(route.key)?.section.code||state.navSectionCode;render();});
 window.addEventListener('keydown',ev=>{
  if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='k'){ev.preventDefault();document.getElementById('global-search')?.focus();}
  if(ev.key==='Escape'){if(state.modal){state.modal=null;render();}else if(state.searchOpen){state.searchOpen=false;const host=document.getElementById('search-host');if(host)host.innerHTML='';}}
 });
-async function init(){try{const saved=await readWorkspace();if(saved?.structure && Array.isArray(saved.structure.sections)){state.workspace={records:{},history:[],lastPresentApps:[],demo:false,...saved};state.expanded=new Set((saved.structure.sections||[]).slice(0,4).map(s=>s.code));}}catch(err){state.storageReady=false;console.warn('IndexedDB unavailable',err);}refreshRelations();render();}
+async function loadBundledStructure(){
+ const manifestResponse=await fetch('./seed/manifest.json',{cache:'no-cache'});
+ if(!manifestResponse.ok)throw new Error('Нет манифеста структуры: '+manifestResponse.status);
+ const manifest=await manifestResponse.json();
+ let structure={sections:[],modules:manifest.modules||[],solutions:manifest.solutions||[]};
+ const chunks=await Promise.all((manifest.parts||[]).map(async part=>{
+  const response=await fetch('./seed/'+encodeURIComponent(part)+'.json',{cache:'no-cache'});
+  if(!response.ok)throw new Error('Не загружен '+part+': '+response.status);
+  return response.json();
+ }));
+ for(const chunk of chunks)structure=mergeStructure(structure,chunk);
+ if(countStats(structure).sections!==manifest.sectionCount || countStats(structure).apps!==manifest.applicationCount)throw new Error('Структура загружена не полностью');
+ return structure;
+}
+async function init(){
+ let saved=null,bundled=null;
+ try{saved=await readWorkspace();}catch(err){state.storageReady=false;console.warn('IndexedDB unavailable',err);}
+ try{bundled=await loadBundledStructure();state.bundledStructure=bundled;}
+ catch(err){console.warn('Could not fetch bundled structure',err);}
+ if(bundled){
+  const hasSaved=saved?.structure && Array.isArray(saved.structure.sections)&&!saved.demo;
+  state.workspace=hasSaved?{records:{},history:[],lastPresentApps:[],...saved,structure:mergeStructure(bundled,saved.structure),demo:false}:{structure:bundled,records:generateForAll(bundled,3,{}),history:[],lastPresentApps:getApps(bundled).map(x=>x.key),demo:false};
+  if(!hasSaved)await persist();
+ }else if(saved?.structure && Array.isArray(saved.structure.sections))state.workspace={records:{},history:[],lastPresentApps:[],...saved};
+ state.navSectionCode=state.workspace.structure.sections.find(s=>s.code==='_clients')?.code||state.workspace.structure.sections[0]?.code||'sales';
+ state.expanded=new Set([state.navSectionCode]);
+ refreshRelations();
+ if(!location.hash && relations.byKey.has('_clients/zayavka_ai_bb'))location.hash=routeApp('_clients/zayavka_ai_bb');
+ render();
+ if(!bundled)toast('Не удалось загрузить встроенную структуру. Используйте импорт JSON.','error');
+}
 init();
