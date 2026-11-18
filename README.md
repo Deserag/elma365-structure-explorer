@@ -31,10 +31,10 @@ npm start
 
 ## Публикация на GitHub Pages
 
-1. Создайте **новый публичный репозиторий** `elma365-structure-explorer` на GitHub.
-2. Загрузите в ветку `main` **весь код из этого проекта**, включая `index.html`, `app.mjs`, `data.mjs`, `styles.css`, `.nojekyll`, каталог `assets`.
-3. На GitHub откройте **Settings → Pages → Build and deployment**. Выберите `Deploy from a branch`, затем `main` и `/(root)`, сохраните.
-4. Откройте адрес вида `https://<github-login>.github.io/elma365-structure-explorer/`.
+1. Откройте [Settings → Pages](https://github.com/Deserag/elma365-structure-explorer/settings/pages).
+2. В разделе **Build and deployment** выберите **Deploy from a branch**.
+3. Выберите ветку **main**, каталог **/(root)** и нажмите **Save**.
+4. После публикации сайт будет доступен по адресу: https://deserag.github.io/elma365-structure-explorer/.
 
 Приложение использует относительные URL и маршруты через `#`, поэтому не требует `base`-конфигурации и server-side rewrite.
 
