@@ -1,0 +1,109 @@
+/* ELMA365-inspired navigation and workspace shell. Independent static viewer. */
+:root{font-family:Arial,"Segoe UI",sans-serif;color:#1f303e;background:#fff}
+body{font-size:13px}
+.app-shell{background:#fff}
+.rail{width:68px;flex:0 0 68px;background:#0d3053;border:0;color:#fff;align-items:stretch;padding:0;gap:0;overflow:hidden}
+.rail-logo{height:68px;width:68px;min-height:68px;border-radius:0;background:#fff;color:#157abc;font:700 35px Arial;letter-spacing:-3px;text-align:center;border-right:1px solid #e2eaf0}
+.rail-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.rail-scroll::-webkit-scrollbar{display:none}
+.rail-section{width:68px;min-height:61px;padding:9px 4px 6px;border:0;border-radius:0;background:transparent;color:#e8f0f8;display:flex;flex-direction:column;gap:5px;align-items:center;justify-content:center;position:relative;cursor:pointer;text-align:center}
+.rail-section:hover{background:#174a7e;color:#fff}
+.rail-section.selected{background:#1c6298;color:#fff}
+.rail-section.selected:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#57a5e6}
+.rail-section .ico{width:21px;height:21px;flex:0 0 auto}
+.rail-section small{font-size:9px;line-height:1.12;max-width:60px;word-break:break-word;color:inherit;font-weight:500}
+.rail-help{min-height:46px;border-top:1px solid #264967}
+.sidebar{flex:0 0 233px;width:233px;background:#e4edf3;border-right:1px solid #d7e0e7}
+.sidebar-title{height:68px;min-height:68px;padding:12px 10px 12px 14px;border-bottom:1px solid #d8e3eb}
+.sidebar-title h2{font-size:19px;margin:0;color:#153a5c;letter-spacing:-.3px}
+.sidebar-title .eyebrow{display:none}
+.sidebar-title .icon-button{color:#366b8d}
+.sidebar-all{display:flex;align-items:center;gap:9px;padding:11px 12px;min-height:40px;color:#205e8f;font-weight:700}
+.sidebar-all:hover,.sidebar-all.active{background:#cbdfea;color:#126caa}
+.sidebar-scroll{padding:6px 0 18px;scrollbar-color:#bfd0dd transparent}
+.sidebar-section-label{padding:12px 13px 9px;font-weight:700;color:#7595a8;font-size:10px;letter-spacing:.6px}
+.elma-sidebar-apps{padding:0}
+.sidebar .tree-child{color:#2e5268;margin:0;border-radius:0;min-height:36px;font-size:12px;gap:10px;padding:9px 9px 9px 15px}
+.sidebar .tree-child svg{color:#58849e}
+.sidebar .tree-child:hover{background:#d4e6f2;color:#155a8f}
+.sidebar .tree-child.active{background:#c4dbe9;color:#116ca8;border-left:3px solid #288ad1;padding-left:12px;font-weight:700}
+.sidebar .tree-child.active svg{color:#217fbb}
+.sidebar-aux>div,.sidebar-process{display:flex;align-items:center;gap:8px;padding:8px 15px;color:#496c80;font-size:11px;line-height:1.35}
+.sidebar-aux>div span,.sidebar-process span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sidebar-optional{border-top:1px solid #d4e1e9;margin:12px 0;font-size:11px;color:#4a718b}
+.sidebar-optional summary{padding:12px 15px;cursor:pointer;font-weight:650}
+.sidebar-bottom{background:#dce8f0;border-top:1px solid #ccdce6;padding:10px}
+.side-note{color:#658399;margin:0 0 7px;font-size:10px}
+.side-note svg{color:#3f9ca5}
+.sidebar-bottom .btn{border-radius:3px;background:#fff;color:#1f658e;border-color:#c0d1dd}
+.header{height:63px;min-height:63px;padding:0 20px;border-bottom:1px solid #dbe4eb;background:#fff}
+.search-wrap{max-width:none}
+.search-box{background:#fff;border:1px solid #d8e0e6;border-radius:3px;height:32px;max-width:720px}
+.search-box input{font-size:12px}
+.search-box input::placeholder{color:#9ba6b1}
+.header-actions .btn{border-radius:3px;min-height:32px}
+.btn{border-radius:3px;font-size:12px;font-weight:640}
+.btn-primary{background:#126baa;box-shadow:none}
+.btn-primary:hover{background:#095688}
+.btn-secondary{color:#195c8f;border-color:#b9ccd9}
+.btn-ghost{color:#276a96}
+.content{max-width:none;min-width:0;background:#fff;padding:22px 22px 16px}
+.breadcrumbs{margin-bottom:18px}
+.page-heading h1{font-size:22px;letter-spacing:-.35px;color:#172d3f;font-weight:700}
+.page-heading{margin-bottom:21px}
+.page-heading p{font-size:12px}
+.section-kicker{color:#7a97aa}
+.panel,.stat-card{border-color:#dce5ed;border-radius:4px;box-shadow:none}
+.stat-card{min-height:98px}
+.stat-card .stat-value{color:#235578;font-size:23px}
+.panel-top{padding:16px 17px}
+.panel-top h2{color:#1e4b70}
+.grid-row{padding-left:16px;padding-right:16px}
+.section-row:hover{background:#edf6fb}
+.section-folder{border-radius:3px}
+.page-footer{display:none}
+.elma-app-page{margin:-22px -22px -16px;background:#fff;min-height:calc(100vh - 63px)}
+.elma-toolbar{min-height:63px;display:flex;align-items:center;gap:16px;justify-content:space-between;background:#fff;border-bottom:1px solid #dbe4eb;padding:11px 21px}
+.elma-filter{display:flex;align-items:center;gap:8px;max-width:660px;flex:1;border:1px solid #dfe6ea;border-radius:3px;padding:0 10px;color:#7392a6;height:32px;min-width:170px}
+.elma-filter input{background:transparent;border:none;outline:0;min-width:0;flex:1;font-size:12px;color:#2e4962}
+.elma-filter input::placeholder{color:#a7b1b8}
+.elma-filter>span{white-space:nowrap;font-size:11px;color:#9aabb6}
+.elma-toolbar-right{display:flex;gap:8px;align-items:center}
+.mock-pill{background:#fff4df;border:1px solid #f7e0ad;color:#986d24;border-radius:3px;padding:5px 8px;white-space:nowrap;font-size:11px}
+.elma-app-body{padding:22px 21px 0;background:#fff}
+.elma-name-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+.elma-name-row h1{font-size:21px;line-height:1.4;margin:0 0 5px;font-weight:700;letter-spacing:-.4px;color:#1f2d38}
+.elma-settings{vertical-align:middle;margin-left:8px;color:#88a2b4}
+.app-subline{font-size:11px;color:#6990a8}
+.app-subline span{margin-left:9px}
+.elma-view-switch{display:flex;border:1px solid #cbdce7;border-radius:3px;overflow:hidden}
+.view-switch{border:none;display:grid;place-items:center;width:35px;height:30px;background:#fff;color:#4281ad}
+.view-switch+button{border-left:1px solid #cbdce7}
+.view-switch.on{background:#dcecf7;color:#126ba6}
+.elma-app-body>.tabs{border-bottom:1px solid #d8e6ee;margin-bottom:18px;gap:4px}
+.elma-app-body .tab{font-weight:650;min-height:41px;padding:0 14px;color:#587c95;font-size:12px}
+.elma-app-body .tab.active{border-bottom-color:#1671ad;color:#145e92}
+.elma-app-body .tab-panel{border:1px solid #dde6ec;border-radius:3px;box-shadow:none}
+.elma-app-body .tab-panel .panel-top{background:#fff}
+.elma-app-body .tab-panel .panel-top p{font-size:11px}
+.kanban-hint{display:flex;align-items:center;gap:7px;background:#f3f8fc;border:1px solid #dce8ef;color:#6b8ba0;border-radius:3px;padding:8px 10px;margin-bottom:12px;font-size:11px}
+.kanban-board{display:flex;gap:8px;align-items:stretch;overflow-x:auto;padding:0 0 20px;min-height:560px}
+.kanban-col{min-width:220px;max-width:390px;flex:1 0 235px;background:#f3f5f7;padding:0 9px 10px}
+.kanban-col.col-1{background:#edf3f7}
+.kanban-col.col-2{background:#dceaf3}
+.kanban-col.col-3{background:#e9f3f6}
+.kanban-title{padding:14px 6px 13px;color:#166b9f;font-size:13px;font-weight:700;min-height:53px}
+.kanban-title span{font-weight:500}
+.kanban-cards{display:flex;flex-direction:column;gap:9px}
+.kanban-card{text-align:left;display:block;width:100%;border:1px solid #d5e0e7;border-radius:3px;background:#fff;min-height:158px;padding:15px 12px 12px;box-shadow:0 1px 1px #273c4708;color:#1a689f;transition:border-color .16s,box-shadow .16s}
+.kanban-card:hover{border-color:#5eafd9;box-shadow:0 3px 12px #165c831a}
+.kanban-card strong{display:block;color:#0d609a;font-size:12px;line-height:1.65;margin-bottom:15px}
+.kanban-label{display:block;font-size:11px;color:#74848c;margin-bottom:9px}
+.kanban-meta{display:flex;align-items:center;gap:5px;border-top:1px solid #e2e8ec;padding-top:10px;font-size:10.5px;color:#7d8c93}
+.kanban-author{margin-top:5px;color:#166c9e;font-size:11.5px;text-decoration:underline dotted;text-underline-offset:3px}
+.kanban-no-records{color:#8a9aa5;padding:20px 4px;font-size:11px}
+.elma-app-body .data-table thead{background:#f1f6f9}
+.elma-app-body .data-table th{color:#6c91a9}
+.elma-app-body .data-table tbody tr:hover{background:#edf8fd}
+@media(max-width:900px){.sidebar{flex-basis:210px;width:210px}.rail{flex-basis:58px;width:58px}.rail-section,.rail-logo{width:58px}.rail-section small{font-size:8px}.elma-toolbar{flex-wrap:wrap}.elma-toolbar-right{margin-left:auto}.elma-filter>span{display:none}}
+@media(max-width:720px){.rail{flex-basis:52px;width:52px}.rail-section,.rail-logo{width:52px}.sidebar{position:fixed;left:52px;top:0;max-height:100vh;width:220px;box-shadow:12px 0 30px #102a3722}.elma-toolbar-right .mock-pill{display:none}.elma-app-body{padding:13px 10px}.elma-name-row{align-items:flex-start}.elma-app-page{margin:-22px -22px -16px}.kanban-col{flex-basis:220px}.header{padding:0 10px}.header .local-indicator{display:none}}
