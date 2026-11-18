@@ -2,7 +2,7 @@ import {DEMO,appKey,mergeStructure,countStats,getApps,buildRelations,findAccessE
 
 const root=document.getElementById('root');
 const fileInput=document.getElementById('file-input');
-const state={workspace:{structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true},activeTab:'records',expanded:new Set(['_clients','sales','hr']),search:'',searchOpen:false,modal:null,toast:null,sidebarOpen:true,storageReady:true,viewMode:'kanban',navSectionCode:'_clients'};
+const state={workspace:{structure:DEMO,records:{},history:[],lastPresentApps:[],demo:true},activeTab:'records',expanded:new Set(['_clients','sales','hr']),search:'',searchOpen:false,modal:null,toast:null,sidebarOpen:true,storageReady:true,viewMode:'kanban',navSectionCode:'_clients',recordSearch:''};
 let relations=buildRelations(DEMO),toastTimer;
 const escapeHTML=(value)=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
 const e=escapeHTML;
@@ -128,7 +128,7 @@ function renderMissing(){return `${bread([{name:'Не найдено'}])}<div cl
 function tabButton(id,label,iconName,count=''){return `<button class="tab ${state.activeTab===id?'active':''}" data-action="tab" data-tab="${id}">${ic(iconName,17)}${label}${count!==''?`<span class="tab-count">${count}</span>`:''}</button>`;}
 function renderApp(){const entry=activeEntry();if(!entry)return renderMissing();const {section,app,key}=entry;
  const incoming=relations.inward.get(key)||[],outgoing=relations.outward.get(key)||[],proc=appProcesses(section,app),records=state.workspace.records[key]||[],access=findAccessEntries(section,app);
- return `<div class="elma-app-page"><div class="elma-toolbar"><div class="elma-filter">${ic('search',17)}<input id="record-search" placeholder="Поиск по полю Название" aria-label="Поиск по тестовым записям"/><span>Элементов: ${records.length}</span>${ic('table',16)}</div><div class="elma-toolbar-right"><span class="mock-pill">Тестовые данные</span>${button('Создать запись','generate','primary','plus')}${button('JSON','app-json','secondary','code')}</div></div>
+ return `<div class="elma-app-page"><div class="elma-toolbar"><div class="elma-filter">${ic('search',17)}<input id="record-search" value="${escAttr(state.recordSearch)}" placeholder="Поиск по полю Название" aria-label="Поиск по тестовым записям"/><span>Элементов: ${records.length}</span>${ic('table',16)}</div><div class="elma-toolbar-right"><span class="mock-pill">Тестовые данные</span>${button('Создать запись','generate','primary','plus')}${button('JSON','app-json','secondary','code')}</div></div>
  <div class="elma-app-body"><div class="elma-name-row"><div><h1>${e(app.name)} <span class="elma-settings">${ic('settings',17)}</span></h1><div class="app-subline">${e(section.name)} / ${e(app.code)} <span>· ${app.fields?.length||0} полей · ${proc.length} БП · ${outgoing.length+incoming.length} связей</span>${isArchived(key)?'<span class="stale-label">Сохранено из прежнего импорта</span>':''}</div></div><div class="elma-view-switch"><button data-action="view-kanban" title="Карточки" class="view-switch ${state.viewMode==='kanban'?'on':''}">${ic('grid',17)}</button><button data-action="view-table" title="Таблица" class="view-switch ${state.viewMode==='table'?'on':''}">${ic('table',17)}</button></div></div>
  <div class="tabs">${tabButton('records','Все записи','database',records.length)}${tabButton('fields','Поля приложения','table',app.fields?.length||0)}${tabButton('relations','Связи','network',outgoing.length+incoming.length)}${tabButton('processes','Бизнес-процессы','workflow',proc.length)}${tabButton('access','Доступ','shield',access.length)}</div>
  <div class="tab-content">${state.activeTab==='records'?renderRecords(entry):state.activeTab==='fields'?renderFields(entry):state.activeTab==='relations'?renderRelations(entry):state.activeTab==='processes'?renderProcesses(entry):renderAccess(entry)}</div></div></div>`;
@@ -203,7 +203,13 @@ function renderModal(){const modal=state.modal;if(!modal)return'';
  }
  return `<div class="modal-backdrop" data-action="close-modal"><div role="dialog" aria-modal="true" class="modal ${modal.type==='record'?'modal-wide':''}" ><div class="modal-heading"><h2>${e(title)}</h2><button class="icon-button" data-action="close-modal">${ic('close',20)}</button></div><div class="modal-content">${content}</div>${footer?`<div class="modal-footer">${footer}</div>`:''}</div></div>`;
 }
-function render(){const route=hashRoute();root.innerHTML=`<div class="app-shell">${renderRail()}${renderSidebar()}<div class="main-shell">${renderHeader()}<main class="content">${route.kind==='app'?renderApp():route.kind==='section'?renderSection():renderOverview()}<footer class="page-footer">ELMA365 Structure Explorer <span>·</span> Browser-only <span>·</span> Неофициальный инструмент</footer></main></div></div><div id="toast-host"></div><div id="modal-host">${renderModal()}</div>`;renderToast();}
+function applyRecordFilter(){
+ const term=state.recordSearch.trim().toLocaleLowerCase('ru');
+ for(const card of document.querySelectorAll?.('.kanban-card')||[]){const title=card.querySelector('strong')?.textContent||'';card.hidden=Boolean(term)&&!title.toLocaleLowerCase('ru').includes(term);}
+ for(const col of document.querySelectorAll?.('.kanban-col')||[]){const count=[...col.querySelectorAll('.kanban-card')].filter(card=>!card.hidden).length;const span=col.querySelector('.kanban-title span');if(span)span.textContent=`(${count})`;}
+ for(const row of document.querySelectorAll?.('.data-table tbody tr')||[]){row.hidden=Boolean(term)&&!row.textContent.toLocaleLowerCase('ru').includes(term);}
+}
+function render(){const route=hashRoute();root.innerHTML=`<div class="app-shell">${renderRail()}${renderSidebar()}<div class="main-shell">${renderHeader()}<main class="content">${route.kind==='app'?renderApp():route.kind==='section'?renderSection():renderOverview()}<footer class="page-footer">ELMA365 Structure Explorer <span>·</span> Browser-only <span>·</span> Неофициальный инструмент</footer></main></div></div><div id="toast-host"></div><div id="modal-host">${renderModal()}</div>`;renderToast();applyRecordFilter();}
 
 async function onImport(file){if(!file)return;
  try{
@@ -224,6 +230,7 @@ async function onImport(file){if(!file)return;
 }
 fileInput.addEventListener('change',ev=>onImport(ev.target.files?.[0]));
 root.addEventListener('input',ev=>{
+ if(ev.target.id==='record-search'){state.recordSearch=ev.target.value;applyRecordFilter();return;}
  if(ev.target.id==='global-search'){
   state.search=ev.target.value;state.searchOpen=true;
   const host=document.getElementById('search-host');if(host)host.innerHTML=searchMarkup();
@@ -281,7 +288,7 @@ document.getElementById('root').parentElement.addEventListener('click',async ev=
   state.workspace={structure:state.bundledStructure||DEMO,records:{},history:[],lastPresentApps:[],demo:!state.bundledStructure};refreshRelations();state.modal=null;navigate('#/');await persist();render();toast('Рабочее пространство очищено.');return;
  }
 });
-window.addEventListener('hashchange',()=>{state.activeTab='records';state.searchOpen=false;const route=hashRoute();if(route.kind==='section')state.navSectionCode=route.key;else if(route.kind==='app')state.navSectionCode=relations.byKey.get(route.key)?.section.code||state.navSectionCode;render();});
+window.addEventListener('hashchange',()=>{state.activeTab='records';state.searchOpen=false;state.recordSearch='';const route=hashRoute();if(route.kind==='section')state.navSectionCode=route.key;else if(route.kind==='app')state.navSectionCode=relations.byKey.get(route.key)?.section.code||state.navSectionCode;render();});
 window.addEventListener('keydown',ev=>{
  if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='k'){ev.preventDefault();document.getElementById('global-search')?.focus();}
  if(ev.key==='Escape'){if(state.modal){state.modal=null;render();}else if(state.searchOpen){state.searchOpen=false;const host=document.getElementById('search-host');if(host)host.innerHTML='';}}
